@@ -19,20 +19,27 @@ public class MMGRD {
 	private List<MMGRDTreeNodeFunction> operators;
 	private List<MMGRDTreeNodeTerminal> terminals;
 	private List<Double> generationFitness;
-
+	private int POPULATION_SIZE;
 	private int TOURNAMENT_SELECTION_SIZE = 4;
 	private double MUTATION_RATE = 0.15d;
 	private EvalUtilities util;
 	private double SIMPLIFICATION_RATE = 0.35;
-	private double MAX_NODES =  30;
+	private int MAX_NODES = 30;
 	private int MAX_NODE_INI_DEPTH = 3;
 	private boolean foundSolution;
+
 	public MMGRD(Dataset dataset, int populationSize,
 			List<MMGRDTreeNodeFunction> operators,
-			List<MMGRDTreeNodeTerminal> terminals) {
+			List<MMGRDTreeNodeTerminal> terminals, double SIMPLIFICATION_RATE,
+			int MAX_NODES, int MAX_NODE_INI_DEPTH) {
 		this.dataset = dataset;
 		this.operators = operators;
 		this.terminals = terminals;
+		this.POPULATION_SIZE = populationSize;
+		this.SIMPLIFICATION_RATE = SIMPLIFICATION_RATE;
+		this.MAX_NODES = MAX_NODES;
+		this.MAX_NODE_INI_DEPTH = MAX_NODE_INI_DEPTH;
+
 		initialize(populationSize);
 	}
 
@@ -45,11 +52,12 @@ public class MMGRD {
 		foundSolution = false;
 		int growLimit = (int) (0.5 * populationSize);
 		for (int i = 0; i < growLimit; i++) {
-			population[i] = initializeIndividualGrow(0, (int)(Math.random()*MAX_NODE_INI_DEPTH)+1);
+			population[i] = initializeIndividualGrow(0,
+					(int) (Math.random() * MAX_NODE_INI_DEPTH) + 1);
 		}
 
 		for (int i = growLimit; i < populationSize; i++) {
-			population[i] = initializeIndividualFull((int)(Math.random()*MAX_NODE_INI_DEPTH)+1);
+			population[i] = initializeIndividualFull((int) (Math.random() * MAX_NODE_INI_DEPTH) + 1);
 		}
 
 		// Static initialization of the MathEclipse engine instead of null
@@ -59,27 +67,32 @@ public class MMGRD {
 		util = new EvalUtilities();
 	}
 
-	public void iterate(int numberOfIterations, double mse ) {
+	public void iterate(int numberOfIterations, double mse) {
 		for (int i = 0; i < numberOfIterations; i++) {
-			generation ++;
+			generation++;
 			mutatePopulation();
 			evaluatePopulation();
 			MMGRDTreeNode[] best = getFittest(1);
 			int bestIndex = getIndividualIndex(best[0]);
 			double bestFitness = evaluation[bestIndex];
 			generationFitness.add(bestFitness);
-			System.out.println(generation + ","
-					+ bestFitness+ "," + best[0].simplify(util));
-			if (evaluation[getIndividualIndex(best[0])]<mse){
+			System.out.println(generation + "," + bestFitness + ","
+					+ best[0].simplify(util));
+			if (evaluation[getIndividualIndex(best[0])] < mse) {
 				foundSolution = true;
 				evaluate(best[0]);
-				System.out.println("Minimum MSE reached. Function found = "+ best[0].simplify(util));
+				System.out.println("Minimum MSE reached. Function found = "
+						+ best[0].simplify(util));
 				break;
+			}else if (evaluation[getIndividualIndex(best[0])]>Double.MAX_VALUE){
+				System.out.println(best[0]);
+				System.out.println("wtfffffff");
+				best = getFittest(1);
 			}
 			population = getNewPopulation();
-//			evaluatePopulation();
+			// evaluatePopulation();
 			simplifyNodes();
-			
+
 		}
 	}
 
@@ -102,9 +115,9 @@ public class MMGRD {
 
 	public void evaluatePopulation() {
 		for (int i = 0; i < population.length; i++) {
-			if (population[i].getNumberofTotalNodes() <= MAX_NODES){
-			evaluation[i] = evaluate(population[i]);
-			}else{
+			if (population[i].getNumberofTotalNodes() <= MAX_NODES) {
+				evaluation[i] = evaluate(population[i]);
+			} else {
 				evaluation[i] = Double.MAX_VALUE;
 			}
 		}
@@ -120,23 +133,23 @@ public class MMGRD {
 
 			Double result = null;
 
-			result = node.evaluate(values,valueNames);
+			result = node.evaluate(values, valueNames);
 
 			totalSquaredError += Math.sqrt((values[values.length - 1] - result)
 					* (values[values.length - 1] - result));
 		}
-		
+
 		return totalSquaredError / dataset.getNumberOfRows();
 	}
 
 	private void mutatePopulation() {
-		for (int i = 0; i < population.length; i++) {
+		for (int i = (int)(0.05*POPULATION_SIZE); i < population.length; i++) {
 			if (Math.random() < MUTATION_RATE) {
 				mutate(population[i]);
 			}
 		}
 	}
-	
+
 	public boolean isFoundSolution() {
 		return foundSolution;
 	}
@@ -146,31 +159,28 @@ public class MMGRD {
 		if (randomNode.getParent() != null) {
 			MMGRDTreeNode parent = randomNode.getParent();
 			randomNode.getParent().removeChild(randomNode);
-			randomNode = initializeIndividualGrow(0, (int)(Math.random()*MAX_NODE_INI_DEPTH)+1);
+			randomNode = initializeIndividualGrow(0,
+					(int) (Math.random() * MAX_NODE_INI_DEPTH) + 1);
 			parent.addChild(randomNode);
 		}
 	}
-	
-	private void simplifyNodes(){
-		for (int i = 0; i<population.length;i++){
-			if (Math.random()< SIMPLIFICATION_RATE){
-	//			System.out.println("Simpl "+i+": "+ population[i]);
-				MMGRDTreeNode oldNode =  population[i];
+
+	private void simplifyNodes() {
+		for (int i = 0; i < population.length; i++) {
+			if (Math.random() < SIMPLIFICATION_RATE) {
+				// System.out.println("Simpl "+i+": "+ population[i]);
+				MMGRDTreeNode oldNode = population[i];
 				MMGRDTreeNode simplifiedNode = oldNode.simplify(util);
-				double oldScore=0,newScore=0;
-	//			if (!oldNode.equals(simplifiedNode)){
-	//				oldScore = evaluate(oldNode);
-	//				newScore = evaluate(simplifiedNode);
-	//				if (oldScore!= newScore){
-	//					System.err.println("WTF "+ "Old: "+oldScore+", new: "+ newScore );
-	//				}
-	//			}
-	//			System.out.println("Old: "+oldScore+", new: "+ newScore );
-				while (simplifiedNode==null || simplifiedNode.toString().contains("Indet") || simplifiedNode.toString().contains("I") || simplifiedNode.toString().contains("\\") ){
-	 				simplifiedNode = initializeIndividualGrow(0, (int)(Math.random()*MAX_NODE_INI_DEPTH)+1).simplify(util);
-	
+				double oldScore = 0, newScore = 0;
+				while (simplifiedNode == null
+						|| simplifiedNode.toString().contains("Indet")
+						|| simplifiedNode.toString().contains("I")
+						|| simplifiedNode.toString().contains("\\")) {
+					simplifiedNode = initializeIndividualGrow(0,
+							(int) (Math.random() * MAX_NODE_INI_DEPTH) + 1)
+							.simplify(util);
 				}
-				population[i]=simplifiedNode;
+				population[i] = simplifiedNode;
 			}
 		}
 	}
@@ -180,7 +190,7 @@ public class MMGRD {
 		int eliteLimit = (int) (0.1 * population.length);
 		int tournamentLimit = (int) (0.5 * population.length);
 		int randomLimit = (int) (0.75 * population.length);
-		int newNodeLimit = ((int) (population.length))-2;
+		int newNodeLimit = ((int) (population.length)) - 2;
 
 		MMGRDTreeNode[] elite = getFittest(eliteLimit);
 		for (int i = 0; i < eliteLimit; i++) {
@@ -204,18 +214,31 @@ public class MMGRD {
 
 		}
 		for (int i = randomLimit; i < newNodeLimit; i++) {
-			if (Math.random()<0.5){
-				newPopulation[i] = initializeIndividualGrow(0,(int)(Math.random()*MAX_NODE_INI_DEPTH)+1);
-			}else{
-				newPopulation[i] = initializeIndividualFull((int)(Math.random()*MAX_NODE_INI_DEPTH)+1);
+			if (Math.random() < 0.5) {
+				newPopulation[i] = initializeIndividualGrow(0,
+						(int) (Math.random() * MAX_NODE_INI_DEPTH) + 1);
+			} else {
+				newPopulation[i] = initializeIndividualFull((int) (Math
+						.random() * MAX_NODE_INI_DEPTH) + 1);
 			}
 		}
 		MMGRDTreeNode bestNode = getFittest(1)[0];
 		double fitness = evaluate(bestNode);
-		newPopulation[population.length-2] = bestNode.clone(null).addConstantTerm(fitness);
-		newPopulation[population.length-1] = bestNode.clone(null).addConstantTerm(-fitness);
-		
+		newPopulation[population.length - 2] = bestNode.clone(null)
+				.addConstantTerm(fitness);
+		newPopulation[population.length - 1] = bestNode.clone(null)
+				.addConstantTerm(-fitness);
+		checkPopulation(newPopulation);
 		return newPopulation;
+	}
+
+	private void checkPopulation(MMGRDTreeNode[] newPopulation) {
+		// This is needed to prevent getting stalled on recursive trigonometric
+		// or power functions
+		for (MMGRDTreeNode node : newPopulation) {
+			node.checkAndApplyConstraints(terminals, operators, 0, 0, 0);
+		}
+
 	}
 
 	private MMGRDTreeNode[] crossover(MMGRDTreeNode parent1,
@@ -228,19 +251,21 @@ public class MMGRD {
 		// Swap nodes without loosing references
 		MMGRDTreeNode auxParent1 = parent1Node.getParent();
 		MMGRDTreeNode auxParent2 = parent2Node.getParent();
+		parent1Node.setParent(null);
+		parent2Node.setParent(null);
 		if (auxParent1 != null) {
 			auxParent1.removeChild(parent1Node);
 			auxParent1.addChild(parent2Node);
 		} else {
 			parent1 = parent2Node;
+			
 		}
 		if (auxParent2 != null) {
 			auxParent2.removeChild(parent2Node);
 			auxParent2.addChild(parent1Node);
 		} else {
-			parent2 = parent2Node;
+			parent2 = parent1Node;
 		}
-
 		return new MMGRDTreeNode[] { parent1, parent2 };
 	}
 
@@ -278,7 +303,7 @@ public class MMGRD {
 				}
 			}
 		}
-		if (minPos1==-1 ||minPos2 ==-1){
+		if (minPos1 == -1 || minPos2 == -1) {
 			return tournamentSelection();
 		}
 		return new MMGRDTreeNode[] { population[minPos1].clone(null),
@@ -291,7 +316,7 @@ public class MMGRD {
 		List<Double> fittestFitness = new ArrayList<Double>();
 		List<Integer> fittestPositions = new ArrayList<Integer>();
 		for (int i = 0; i < population.length; i++) {
-			if (!Double.isInfinite(evaluation[i]) && !Double.isNaN(evaluation[i])){
+			if (!Double.isInfinite(evaluation[i])&& !Double.isNaN(evaluation[i])) {
 				if (fittestPositions.size() < position) {
 					fittestPositions.add(new Integer(i));
 					fittestFitness.add(new Double(evaluation[i]));
@@ -322,8 +347,8 @@ public class MMGRD {
 		if (fitnessToReplacePos != -1) {
 			fittestFitness.remove(fitnessToReplacePos);
 			fittestPositions.remove((int) fitnessToReplacePos);
-			fittestFitness.add(new Double(evaluation[position]));
-			fittestPositions.add(new Integer(position));
+			fittestFitness.add(fitnessToReplacePos,new Double(evaluation[position]));
+			fittestPositions.add(fitnessToReplacePos,new Integer(position));
 		}
 
 	}

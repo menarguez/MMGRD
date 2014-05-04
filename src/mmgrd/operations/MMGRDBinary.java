@@ -58,8 +58,9 @@ public class MMGRDBinary extends MMGRDFunction {
 		}else if (op.equals(OP_POWER)){
 			operator= "^";
 		}else{
-			System.err.println("Operator not included: " + op);
-			System.exit(-1);
+			operator= "*";
+//			System.err.println("Operator not included: " + op);
+//			System.exit(-1);
 		}
 	}
 }

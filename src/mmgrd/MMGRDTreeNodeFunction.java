@@ -1,5 +1,7 @@
 package mmgrd;
 
+import java.util.List;
+
 import mmgrd.operations.MMGRDBinary;
 import mmgrd.operations.MMGRDUnary;
 
@@ -138,6 +140,33 @@ public class MMGRDTreeNodeFunction extends MMGRDTreeNode {
 		node.addChild(new MMGRDTreeNodeTerminal(node, constant+""));
 		node.addChild(this);
 		return node;
+	}
+
+	
+	@Override
+	public void checkAndApplyConstraints(List<MMGRDTreeNodeTerminal> terminals,
+			List<MMGRDTreeNodeFunction> operators, int numTrigonFound, int numPowerFound,int childPosition) {
+		if (function.getOperator().equals("sin")||function.getOperator().equals("cos") || function.getOperator().equals("tan")){
+			numTrigonFound++;
+		}
+		if (function.getOperator().equals("^")){
+			numPowerFound++;
+		}
+		if (numTrigonFound>1 || numPowerFound>1){
+			int terminalPos = (int)(Math.random()*(terminals.size()-1));
+			MMGRDTreeNode newTerminal = terminals.get(terminalPos).clone(null);
+			newTerminal.parent = this.parent;
+			MMGRDTreeNode linkToParent = this.parent; 
+			this.parent.removeChild(this);
+			//Required because this parent is null now
+			linkToParent.addChild(newTerminal,childPosition);
+			
+		}else{
+			for (int i=0; i<this.childs.size();i++){
+				childs.get(i).checkAndApplyConstraints(terminals,operators,numTrigonFound,numPowerFound,i);
+			}
+			
+		}
 	}
 	
 

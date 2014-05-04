@@ -51,11 +51,23 @@ public abstract class MMGRDTreeNode implements Cloneable {
 		}
 	}
 	
+	public void addChild(MMGRDTreeNode child, int childPosition) {
+		if (childs.size() < getNumberOfOperands()){
+			child.parent = this;
+			childs.add(childPosition, child);
+			incrementNumberOfTotalNodes(child.numberOfTotalNodes);
+		}else{
+			System.err.println("Error: This Node cannot add more childs. Aborting...");
+        	System.exit(-3);
+		}
+		
+	}
+	
 	public void removeChild(MMGRDTreeNode child){
 		if (childs.contains(child)){
 			incrementNumberOfTotalNodes(-child.numberOfTotalNodes);
 			childs.remove(child);
-			child.parent = null;
+//			child.parent = null;
 		}else{
 			System.err.println("Error: Child to remove not found. Aborting ...");
         	System.exit(-3);
@@ -111,5 +123,15 @@ public abstract class MMGRDTreeNode implements Cloneable {
 		}
 		list.add(this);
 		return list;
+	}
+	/**
+	 * This is used to check that we do not have elements in the form of sin(cos(sin...))) or 2^2^...
+	 * @param terminals
+	 * @param operators
+	 */
+	public abstract void checkAndApplyConstraints(List<MMGRDTreeNodeTerminal> terminals, List<MMGRDTreeNodeFunction> operators, int numTrigonFound, int numPowerFound,int childPosition) ;
+
+	public void setParent(MMGRDTreeNode parentNode){
+		this.parent = parentNode;
 	}
 }

@@ -1,6 +1,8 @@
 package mmgrd;
 
 
+import java.util.List;
+
 import mmgrd.operations.MMGRDBinary;
 
 import org.matheclipse.core.eval.EvalUtilities;
@@ -85,5 +87,10 @@ public class MMGRDTreeNodeTerminal extends MMGRDTreeNode {
 		node.addChild(new MMGRDTreeNodeTerminal(node, constant+""));
 		node.addChild(this);
 		return node;
+	}
+	@Override
+	public void checkAndApplyConstraints(List<MMGRDTreeNodeTerminal> terminals,
+			List<MMGRDTreeNodeFunction> operators, int numTrigonFound, int numPowerFound,int childPosition) {
+		//A terminal is always a valid constraint
 	}
 }

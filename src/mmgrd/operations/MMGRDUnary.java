@@ -10,6 +10,7 @@ public class MMGRDUnary extends MMGRDFunction {
 	private String OP_SIN= "sin" ;
 	private String OP_COS = "cos" ;
 	private String OP_TAN = "tan" ;
+	private String OP_LOG = "log" ;
 	public MMGRDUnary(String operator) {
 		super(operator);
 	}
@@ -29,6 +30,9 @@ public class MMGRDUnary extends MMGRDFunction {
 			} else if (operator.equals("tan")) {
 
 				result = Math.tan(childs.get(0).evaluate(variableValues, variableNames));
+			}else if (operator.equals("log")) {
+
+				result = Math.log(childs.get(0).evaluate(variableValues, variableNames));
 			}
 		} catch (Exception e) {
 			return Double.POSITIVE_INFINITY;
@@ -48,6 +52,8 @@ public class MMGRDUnary extends MMGRDFunction {
 			operator= "cos";
 		}else if (op.equals(OP_TAN)){
 			operator= "tan";
+		}else if (op.equals(OP_LOG)){
+			operator= "log";
 		}
 	}
 }
